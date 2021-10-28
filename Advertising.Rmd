@@ -1,0 +1,200 @@
+---
+  title: "Advertising"
+output:
+  word_document: default
+pdf_document: default
+---
+  
+  ```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loading Data 
+
+```{r}
+
+# Clear All Variables & Clear the Screen
+rm(list=ls())
+cat("\014")
+
+# Read in the Data
+data.ad = read.csv("/Users/jadechen/Documents/Customer/AD/Ex3_Data_R.csv")
+
+# Explore the data
+str(data.ad )
+summary(data.ad )
+```
+
+## PREPARE DATA
+
+In our case we have to create new variables: log(Advertising), Advertising^2, and Lag(Sales)
+
+```{r}
+
+# Create log Advertising (we have done this for price so look it up!)
+data.ad$logTotal.Spent <- log(data.ad$Total.Spent)
+
+# Create Advertising^2
+data.ad$Total.Spent2 <- (data.ad$Total.Spent)^2
+
+# Create LAG Sales
+data.ad$LagVisitors <- c(NA, head(data.ad$Visitors, -1))
+
+# Display the data
+summary(data.ad)
+```
+
+## REGRESSION MODELS
+
+1) Define y (Dependent Variable). For this example, we have Y (e.g., sales).
+
+2) Define X (Independent Variables). For this example, we have X1, X2 and X3 (some marketing measures, e.g., price, advertising)
+
+3) Run the Models. For example, a linear model where Sales (Y) is a function of X1, X2 and X3
+
+```{r}
+
+# Run the Regression (includes an INTERCEPT)
+lm.model1 <- lm(Visitors ~ Total.Spent, data = data.ad)
+lm.model2 <- lm(Visitors ~ logTotal.Spent, data = data.ad)
+lm.model3 <- lm(Visitors ~ Total.Spent + Total.Spent2, data = data.ad)
+
+lm.model1a <- lm(Visitors ~ Total.Spent + LagVisitors , data = data.ad)
+lm.model2a <- lm(Visitors ~ logTotal.Spent + LagVisitors , data = data.ad)
+lm.model3a <- lm(Visitors ~ Total.Spent + Total.Spent2 + LagVisitors , data = data.ad)
+
+# Display Results
+summary(lm.model1)
+summary(lm.model2)
+summary(lm.model3)
+
+summary(lm.model1a)
+summary(lm.model2a)
+summary(lm.model3a)
+```
+
+##calculate elasticity
+```{r}
+#Average Visitor for July
+avg.julvisitor<- mean(data.ad$Visitors[62:66])
+
+#Average Spending for July
+avg.julspending<- mean(data.ad$Total.Spent[62:66])
+```
+#Model 1 elasticity
+```{r}
+beta1= lm.model1$coefficients
+t_stat1 = coef(summary(lm.model1))[,3]
+
+#check for statistical significance
+beta.sig1 = beta1;
+
+for (i in length(beta1)){
+  if(abs(t_stat1[i])<1.96) {
+    beta.sig1[i]=0}
+}
+#calculate elasticity
+model1_elasticity<- beta.sig1[2] * (avg.julspending/avg.julvisitor)
+model1_elasticity
+```
+#Model 2 elasticity
+```{r}
+#Get model 2 coefficient
+beta2= lm.model2$coefficients
+t_stat2 = coef(summary(lm.model2))[,3]
+
+#check for statistical significance
+beta.sig2 = beta2;
+
+for (i in length(beta2)){
+  if(abs(t_stat2[i])<1.96) {
+    beta.sig2[i]=0}
+}
+#calculate elasticity
+model2_elasticity<- beta.sig2[2] * (1/avg.julvisitor)
+model2_elasticity
+```
+#Model 3 elasticity
+```{r}
+#Get model 3 coefficient
+beta3= lm.model3$coefficients
+t_stat3 = coef(summary(lm.model3))[,3]
+
+#check for statistical significance
+beta.sig3 = beta3;
+
+for (i in length(beta3)){
+  if(abs(t_stat3[i])<1.96) {
+    beta.sig3[i]=0}
+}
+#calculate elasticity
+model3_elasticity<- (beta.sig3[2] +2*beta.sig3[3]*(avg.julspending))*(avg.julspending/avg.julvisitor)
+model3_elasticity
+```
+#Model 1a elasticity
+```{r}
+#Get model 1a coefficient
+beta4= lm.model1a$coefficients
+t_stat4 = coef(summary(lm.model1a))[,3]
+
+#check for statistical significance
+beta.sig4 = beta4;
+
+for (i in length(beta4)){
+  if(abs(t_stat4[i])<1.96) {
+    beta.sig4[i]=0}
+}
+#calculate elasticity
+model1a_elasticity<- (beta.sig4[2]/(1-beta.sig4[3]))*(avg.julspending/avg.julvisitor)
+model1a_elasticity
+beta.sig4[2]
+```
+#Model2a elasticity
+```{r}
+#Get model 2a coefficient
+beta5= lm.model2a$coefficients
+t_stat5 = coef(summary(lm.model2a))[,3]
+
+#check for statistical significance
+beta.sig5 = beta5;
+
+for (i in length(beta5)){
+  if(abs(t_stat5[i])<1.96) {
+    beta.sig5[i]=0}
+}
+#calculate elasticity
+model2a_elasticity<- (beta.sig5[2]/(1-beta.sig5[3]))* (1/avg.julvisitor)
+model2a_elasticity
+```
+#Model3a elasticity
+```{r}
+#Get model 3a coefficient
+beta6= lm.model3a$coefficients
+t_stat6 = coef(summary(lm.model3a))[,3]
+
+#check for statistical significance
+beta.sig6 = beta6;
+
+for (i in length(beta6)){
+  if(abs(t_stat6[i])<1.96) {
+    beta.sig6[i]=0}
+}
+#calculate elasticity
+model3a_elasticity<- ((beta.sig6[2] +2*beta.sig6[3]*(avg.julspending))/(1-beta.sig6[4]))*(avg.julspending/avg.julvisitor)
+model3a_elasticity
+```
+
+#Saturation
+#Saturation for model 3
+```{r}
+#Saturation for model 3
+model3.sat<- -beta.sig3[2]/2*beta.sig3[3]
+model3.sat
+```
+#Saturation for model 3a
+```{r}
+#Saturation for model 3a
+model3a.sat<- -beta.sig6[2]/2*beta.sig6[3]
+model3a.sat
+
+```
